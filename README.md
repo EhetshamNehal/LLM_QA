@@ -1,2 +1,2 @@
-# Question and Answer using Langchain and FAISS Vector store
+# Question and Answer using Langchain, LLM and FAISS Vector store
 
