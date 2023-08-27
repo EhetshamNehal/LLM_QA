@@ -4,7 +4,14 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.llms import CTransformers
 from langchain.chains import RetrievalQA
-import chainlit as cl
+from flask import Flask
+from flask import Response, request
+import json
+import time
+from langchain.llms import OpenAI
+
+
+app = Flask(__name__)
 
 DB_FAISS_PATH = 'vectorstore/db_faiss'
 
@@ -39,12 +46,15 @@ def retrieval_qa_chain(llm, prompt, db):
 #Loading the model
 def load_llm():
     # Load the locally downloaded model here
-    llm = CTransformers(
-        model = "llama-2-7b-chat.ggmlv3.q8_0.bin",
-        model_type="llama",
-        max_new_tokens = 512,
-        temperature = 0.5
-    )
+    # llm = CTransformers(
+    #     model = "llama-2-7b-chat.ggmlv3.q8_0.bin",
+    #     model_type="llama",
+    #     max_new_tokens = 512,
+    #     temperature = 0.2
+    # )
+    llm = OpenAI(
+        temperature=0.2,
+        model = "text-davinci-003")
     return llm
 
 #QA Model Function
@@ -61,35 +71,39 @@ def qa_bot():
 #output function
 def final_result(query):
     qa_result = qa_bot()
+    start_time = time.time()
     response = qa_result({'query': query})
+    end_time = time.time()
+    print("Total Time Taken : ",end_time-start_time)
     return response
 
-#chainlit code
-@cl.on_chat_start
-async def start():
-    chain = qa_bot()
-    msg = cl.Message(content="Starting the bot...")
-    await msg.send()
-    msg.content = "Hi, Welcome to Medical Bot. What is your query?"
-    await msg.update()
+@app.route('/api/qa',methods =['GET'])
+def answer():
+    try:
+        requestParams = request.get_json()
+        question = requestParams['question']
+        ans = final_result(question)
 
-    cl.user_session.set("chain", chain)
+        return Response(
+            response = json.dumps({
+                "answer" : str(ans),
+                "success" : True, 
+            }),
+            status=200,
+            mimetype="application/json"
+        )
+    except Exception as e:
+        print(e)
+        return Response(
+            response = json.dumps({
+                "answer" : str(e),
+                "success" : False, 
+            }),
+            status=500,
+            mimetype="application/json"
+        )
+        
 
-@cl.on_message
-async def main(message):
-    chain = cl.user_session.get("chain") 
-    cb = cl.AsyncLangchainCallbackHandler(
-        stream_final_answer=True, answer_prefix_tokens=["FINAL", "ANSWER"]
-    )
-    cb.answer_reached = True
-    res = await chain.acall(message, callbacks=[cb])
-    answer = res["result"]
-    sources = res["source_documents"]
-
-    if sources:
-        answer += f"\nSources:" + str(sources)
-    else:
-        answer += "\nNo sources found"
-
-    await cl.Message(content=answer).send()
-
+if __name__ == "__main__":
+    
+    app.run(debug=True,host='0.0.0.0', port=8080)

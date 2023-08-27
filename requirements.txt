@@ -1,3 +1,5 @@
+flask
+docx2txt
 pypdf
 langchain
 torch
@@ -6,4 +8,4 @@ bitsandbytes
 transformers
 sentence_transformers
 faiss_cpu
-chainlit
+ctransformers
