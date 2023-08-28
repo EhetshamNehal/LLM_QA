@@ -9,3 +9,5 @@ transformers
 sentence_transformers
 faiss_cpu
 ctransformers
+openai
+python-dotenv

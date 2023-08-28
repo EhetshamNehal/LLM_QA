@@ -4,15 +4,17 @@ from langchain.vectorstores import FAISS
 from langchain.document_loaders import Docx2txtLoader, DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter 
 from langchain.document_loaders.csv_loader import CSVLoader
+from langchain.document_loaders import TextLoader
 
-DATA_PATH = 'csv/'
-DB_FAISS_PATH = 'vectorstore/db_faiss_csv'
+# DATA_PATH = 'csv/'
+DATA_PATH = 'data/'
+DB_FAISS_PATH = 'vectorstore/db_faiss_txt'
 
 # Create vector database
 def create_vector_db():
     loader = DirectoryLoader(DATA_PATH,
-                             glob='*.docx',
-                             loader_cls=Docx2txtLoader)
+                             glob="**/*.txt",
+                             loader_cls=TextLoader)
     
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000,
